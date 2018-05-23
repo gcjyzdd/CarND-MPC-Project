@@ -63,7 +63,7 @@ public:
     // Minimize the use of actuators.
     for (int t = 0; t < N_ - 1; t++)
     {
-      fg[0] += 100. * CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += 10. * CppAD::pow(vars[delta_start + t], 2);
       /** remove throtle! **/
       fg[0] += CppAD::pow(vars[a_start + t], 2);
     }

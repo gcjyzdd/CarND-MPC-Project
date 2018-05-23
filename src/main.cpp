@@ -46,18 +46,18 @@ int main()
   MPC mpc;
 
   // set mpc configuration
-  mpc.Lf_ = 2.67;
+  mpc.Lf_ = 2.67 -0.5;
   mpc.N_ = 25;
   mpc.ref_v_ = 72 * 0.44704; // m/s
   mpc.dt_ = 1 / 15.;
-  mpc.weight_cte = 100.;
+  mpc.weight_cte = 5.;
 
   Time_Difference td;
   PointsBuffer ptsBuffer;
-  ptsBuffer.num = 3;
+  ptsBuffer.setBufferSize(2);
 
   h.onMessage([&mpc, &ptsBuffer, &td](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-                                                                   uWS::OpCode opCode) {
+                                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -70,7 +70,7 @@ int main()
       if (s != "")
       {
         //cout << sdata << endl;
-        
+
         auto j = json::parse(s);
         string event = j[0].get<string>();
         if (event == "telemetry")
@@ -111,7 +111,7 @@ int main()
 
           Eigen::VectorXd state(6);
           Eigen::VectorXd coeffs = polyfit(vc_x, vc_y, 2);
-
+          //std::cout << "coeffs" << coeffs << std::endl;
           double Latency = 0.; //0.1;//0.1;     // 100 ms
           double Lf = 2.67;
 
@@ -125,7 +125,9 @@ int main()
 
           state << x, y, vpsi, v, cte, epsi;
           //mpc.dt_ = time_dif - Latency;
-          mpc.dt_ = td.averageTimeDiff(std::chrono::steady_clock::now()) - Latency; //(time_dif_total / index) / 1000. - Latency;
+          float dt = td.averageTimeDiff(std::chrono::steady_clock::now()) - Latency;
+          std::cout << "dt = " << dt << " fr = " << 1 / dt << " v = " << v << std::endl;
+          mpc.dt_ = dt; //(time_dif_total / index) / 1000. - Latency;
           auto result = mpc.Solve(state, coeffs);
           double steer_value = result[0];
           double throttle_value = result[1];
