@@ -6,8 +6,9 @@
 #include <vector>
 #include <chrono>
 #include "Eigen-3.3/Eigen/Core"
-#include "Eigen-3.3/Eigen/QR"
+
 #include "MPC.h"
+#include "helper.h"
 #include "json.hpp"
 
 // for convenience
@@ -37,52 +38,6 @@ string hasData(string s)
   return "";
 }
 
-// Evaluate a polynomial.
-double polyeval(Eigen::VectorXd coeffs, double x)
-{
-  double result = 0.0;
-  for (int i = 0; i < coeffs.size(); i++)
-  {
-    result += coeffs[i] * pow(x, i);
-  }
-  return result;
-}
-
-// Fit a polynomial.
-// Adapted from
-// https://github.com/JuliaMath/Polynomials.jl/blob/master/src/Polynomials.jl#L676-L716
-Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
-                        int order)
-{
-  assert(xvals.size() == yvals.size());
-  assert(order >= 1 && order <= xvals.size() - 1);
-  Eigen::MatrixXd A(xvals.size(), order + 1);
-
-  for (int i = 0; i < xvals.size(); i++)
-  {
-    A(i, 0) = 1.0;
-  }
-
-  for (int j = 0; j < xvals.size(); j++)
-  {
-    for (int i = 0; i < order; i++)
-    {
-      A(j, i + 1) = A(j, i) * xvals(j);
-    }
-  }
-
-  auto Q = A.householderQr();
-  auto result = Q.solve(yvals);
-  return result;
-}
-
-struct PointsBuffer
-{
-  int num;
-  std::queue<Eigen::VectorXd> x_buf;
-  std::queue<Eigen::VectorXd> y_buf;
-};
-
 int main()
 {
   uWS::Hub h;
@@ -93,8 +48,8 @@ int main()
   // set mpc configuration
   mpc.Lf_ = 2.67;
   mpc.N_ = 25;
-  mpc.ref_v_ = 72 * 0.44704;  // m/s
-  mpc.dt_ = 1/15.;
+  mpc.ref_v_ = 72 * 0.44704; // m/s
+  mpc.dt_ = 1 / 15.;
   mpc.weight_cte = 100.;
 
   auto begin = std::chrono::steady_clock::now();
@@ -105,8 +60,8 @@ int main()
   PointsBuffer ptsBuffer;
   ptsBuffer.num = 3;
 
-  h.onMessage([&mpc, &begin, &prev_time, &end, &index， &ptsBuffer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-                                           uWS::OpCode opCode) {
+  h.onMessage([&mpc, &begin, &prev_time, &end, &index, &ptsBuffer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+                                                                   uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -137,17 +92,17 @@ int main()
 
           end = std::chrono::steady_clock::now();
           float time_dif_total = std::chrono::duration_cast<std::chrono::microseconds>(end -
-                                                                                 begin)
-                               .count() /
-                           1000.;
+                                                                                       begin)
+                                     .count() /
+                                 1000.;
           float time_dif = std::chrono::duration_cast<std::chrono::microseconds>(end -
                                                                                  prev_time)
                                .count() /
-                           1000./1000.;
-          
+                           1000. / 1000.;
+
           std::cout << "Total = "
                     << time_dif_total
-                    << "ms\t v = " << v <<" diff = "<<time_dif<<" average fps = " << 1000. / (time_dif_total / index) << "\n";
+                    << "ms\t v = " << v << " diff = " << time_dif << " average fps = " << 1000. / (time_dif_total / index) << "\n";
           prev_time = end;
           double delta = j[1]["steering_angle"];
           double acc = j[1]["throttle"];
@@ -170,16 +125,17 @@ int main()
             vc_y[i] = vy[i];
           }
 
-          if(index < (ptsBuffer.num+1))
+          if (index < (ptsBuffer.num + 1))
           {
-            ptsBuffer.x_buf.push_back(vc_x);
-            ptsBuffer.y_buf.push_back(vc_y);
+            ptsBuffer.x_buf.push(vc_x);
+            ptsBuffer.y_buf.push(vc_y);
           }
-          else{
+          else
+          {
             ptsBuffer.x_buf.pop();
             ptsBuffer.y_buf.pop();
-            ptsBuffer.x_buf.push_back(vc_x);
-            ptsBuffer.y_buf.push_back(vc_y);
+            ptsBuffer.x_buf.push(vc_x);
+            ptsBuffer.y_buf.push(vc_y);
           }
           Eigen::VectorXd state(6);
           Eigen::VectorXd coeffs = polyfit(vc_x, vc_y, 2);
@@ -193,11 +149,11 @@ int main()
           double vpsi = 0. + Latency * v * delta / Lf;
           y = Latency * v * vpsi * 0.5;
           double cte = polyeval(coeffs, x);
-          double epsi = vpsi - atan(coeffs[1] + 2 * coeffs[2] * x ) + Latency * v * delta / Lf;
+          double epsi = vpsi - atan(coeffs[1] + 2 * coeffs[2] * x) + Latency * v * delta / Lf;
 
           state << x, y, vpsi, v, cte, epsi;
           //mpc.dt_ = time_dif - Latency;
-          mpc.dt_ = (time_dif_total / index)/1000. - Latency;
+          mpc.dt_ = (time_dif_total / index) / 1000. - Latency;
           auto result = mpc.Solve(state, coeffs);
           double steer_value = result[0];
           double throttle_value = result[1];
