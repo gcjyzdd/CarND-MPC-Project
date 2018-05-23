@@ -7,16 +7,31 @@ Time_Difference::Time_Difference()
     t_stamp = std::chrono::steady_clock::now();
     t_total = 0;
     weights = 0.;
+    default_td = 1 / 20.;
+}
+
+void Time_Difference::start()
+{
+    t_stamp = std::chrono::steady_clock::now();
 }
 
 float Time_Difference::averageTimeDiff(std::chrono::steady_clock::time_point current)
 {
-    t_total = t_total * decay + std::chrono::duration_cast<std::chrono::seconds>(current - t_stamp).count();
-    t_stamp = current;
-    weights = 1 + weights * decay;
-    index++;
+    if (index > 0)
+    {
+        t_total = t_total * decay + std::chrono::duration_cast<std::chrono::seconds>(current - t_stamp).count();
+        t_stamp = current;
+        weights = 1 + weights * decay;
+        index++;
 
-    return t_total / weights;
+        return t_total / weights;
+    }
+    else
+    {
+        t_stamp = current;
+        index++;
+        return default_td;
+    }
 }
 
 // Evaluate a polynomial.

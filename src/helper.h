@@ -14,10 +14,13 @@ class Time_Difference
     size_t index;
     float decay;
     float weights;
+    float default_td;
 
   public:
     Time_Difference();
-    void setDecay(float d) { decay = d; }
+    void start();
+    void setDefaultTimeDifference(const float td) { default_td = td; }
+    void setDecay(const float d) { decay = d; }
     size_t getStep() { return index; }
 
     float averageTimeDiff(std::chrono::steady_clock::time_point now);
@@ -30,10 +33,10 @@ struct PointsBuffer
     std::queue<Eigen::VectorXd> y_buf;
 
   public:
-    PointsBuffer();
-    void setBufferSize(int s) { num = s; }
-    void updateBuffer();
-    void getPoints();
+    PointsBuffer() { num = 4; };
+    void setBufferSize(const int s) { num = s; }
+    void updateBuffer(const Eigen::VectorXd &x, const Eigen::VectorXd &y);
+    void getPoints(Eigen::VectorXd &x, Eigen::VectorXd &y);
 };
 
 // Evaluate a polynomial.
