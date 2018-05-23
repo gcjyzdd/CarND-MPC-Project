@@ -34,6 +34,12 @@ float Time_Difference::averageTimeDiff(std::chrono::steady_clock::time_point cur
     }
 }
 
+/**
+ * Update the buffer.
+ * 
+ * Push back the points or pop front before push back, depending on
+ * the size of current buffer.
+*/
 void PointsBuffer::updateBuffer(const Eigen::VectorXd &x, const Eigen::VectorXd &y)
 {
     if (x_buf.size() < num)
@@ -51,12 +57,23 @@ void PointsBuffer::updateBuffer(const Eigen::VectorXd &x, const Eigen::VectorXd 
     }
 }
 
+/**
+ * Get all points in the buffer
+*/
 void PointsBuffer::getPoints(Eigen::VectorXd &x, Eigen::VectorXd &y)
 {
     size_t len=0;
     for(size_t i=0;i<x_buf.size();i++)
     {
         x.resize(len + x_buf[i].size());
+        y.resize(len + y_buf[i].size());
+
+        for(size_t j=0;j<x_buf[i].size();j++)
+        {
+            x[len+j] = x_buf[i][j];
+            y[len+j] = y_buf[i][j];
+        }
+        len += x_buf[i].size();
     }
 }
 
