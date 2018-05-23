@@ -34,6 +34,32 @@ float Time_Difference::averageTimeDiff(std::chrono::steady_clock::time_point cur
     }
 }
 
+void PointsBuffer::updateBuffer(const Eigen::VectorXd &x, const Eigen::VectorXd &y)
+{
+    if (x_buf.size() < num)
+    {
+        x_buf.push_back(x);
+        y_buf.push_back(y);
+    }
+    else
+    {
+        x_buf.pop_front();
+        y_buf.pop_front();
+
+        x_buf.push_back(x);
+        y_buf.push_back(y);
+    }
+}
+
+void PointsBuffer::getPoints(Eigen::VectorXd &x, Eigen::VectorXd &y)
+{
+    size_t len=0;
+    for(size_t i=0;i<x_buf.size();i++)
+    {
+        x.resize(len + x_buf[i].size());
+    }
+}
+
 // Evaluate a polynomial.
 double polyeval(Eigen::VectorXd coeffs, double x)
 {

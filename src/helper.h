@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <chrono>
-#include <queue> // std::queue
+#include <deque> // std::deque
 #include "Eigen/Core"
 #include "Eigen/QR"
 
@@ -29,8 +29,8 @@ class Time_Difference
 struct PointsBuffer
 {
     int num;
-    std::queue<Eigen::VectorXd> x_buf;
-    std::queue<Eigen::VectorXd> y_buf;
+    std::deque<Eigen::VectorXd> x_buf;
+    std::deque<Eigen::VectorXd> y_buf;
 
   public:
     PointsBuffer() { num = 4; };
