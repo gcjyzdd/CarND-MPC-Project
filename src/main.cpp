@@ -52,15 +52,11 @@ int main()
   mpc.dt_ = 1 / 15.;
   mpc.weight_cte = 100.;
 
-  auto begin = std::chrono::steady_clock::now();
-  auto prev_time = std::chrono::steady_clock::now();
-  auto end = std::chrono::steady_clock::now();
-  int index = 0;
-
+  Time_Difference td;
   PointsBuffer ptsBuffer;
   ptsBuffer.num = 3;
 
-  h.onMessage([&mpc, &begin, &prev_time, &end, &index, &ptsBuffer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  h.onMessage([&mpc, &ptsBuffer, &td](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                                                                    uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -74,8 +70,7 @@ int main()
       if (s != "")
       {
         //cout << sdata << endl;
-
-        index++;
+        
         auto j = json::parse(s);
         string event = j[0].get<string>();
         if (event == "telemetry")
@@ -90,20 +85,6 @@ int main()
 
           v = v * 0.44704; // velocity in m/s
 
-          end = std::chrono::steady_clock::now();
-          float time_dif_total = std::chrono::duration_cast<std::chrono::microseconds>(end -
-                                                                                       begin)
-                                     .count() /
-                                 1000.;
-          float time_dif = std::chrono::duration_cast<std::chrono::microseconds>(end -
-                                                                                 prev_time)
-                               .count() /
-                           1000. / 1000.;
-
-          std::cout << "Total = "
-                    << time_dif_total
-                    << "ms\t v = " << v << " diff = " << time_dif << " average fps = " << 1000. / (time_dif_total / index) << "\n";
-          prev_time = end;
           double delta = j[1]["steering_angle"];
           double acc = j[1]["throttle"];
 
@@ -125,18 +106,9 @@ int main()
             vc_y[i] = vy[i];
           }
 
-          if (index < (ptsBuffer.num + 1))
-          {
-            ptsBuffer.x_buf.push(vc_x);
-            ptsBuffer.y_buf.push(vc_y);
-          }
-          else
-          {
-            ptsBuffer.x_buf.pop();
-            ptsBuffer.y_buf.pop();
-            ptsBuffer.x_buf.push(vc_x);
-            ptsBuffer.y_buf.push(vc_y);
-          }
+          ptsBuffer.updateBuffer(vc_x, vc_y);
+          ptsBuffer.getPoints(vc_x, vc_y);
+
           Eigen::VectorXd state(6);
           Eigen::VectorXd coeffs = polyfit(vc_x, vc_y, 2);
 
@@ -153,7 +125,7 @@ int main()
 
           state << x, y, vpsi, v, cte, epsi;
           //mpc.dt_ = time_dif - Latency;
-          mpc.dt_ = (time_dif_total / index) / 1000. - Latency;
+          mpc.dt_ = td.averageTimeDiff(std::chrono::steady_clock::now()) - Latency; //(time_dif_total / index) / 1000. - Latency;
           auto result = mpc.Solve(state, coeffs);
           double steer_value = result[0];
           double throttle_value = result[1];
