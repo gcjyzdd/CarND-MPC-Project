@@ -9,34 +9,38 @@
 
 class Time_Difference
 {
-    std::chrono::steady_clock::time_point t_stamp;
-    float t_total;
-    size_t index;
-    float decay;
-    float weights;
-    float default_td;
+  std::chrono::steady_clock::time_point t_stamp;
+  float t_total;
+  size_t index;
+  float decay;
+  float weights;
+  float default_td;
+  bool printInfo;
+  int num;
+  std::deque<float> tbuf;
 
-  public:
-    Time_Difference();
-    void start();
-    void setDefaultTimeDifference(const float td) { default_td = td; }
-    void setDecay(const float d) { decay = d; }
-    size_t getStep() { return index; }
+public:
+  Time_Difference();
+  void start();
+  void setDefaultTimeDifference(const float td) { default_td = td; }
+  void setDecay(const float d) { decay = d; }
+  size_t getStep() { return index; }
 
-    float averageTimeDiff(std::chrono::steady_clock::time_point now);
+  float averageTimeDiff(std::chrono::steady_clock::time_point now);
+  float weightedAverageTimeDiff(std::chrono::steady_clock::time_point now);
 };
 
 struct PointsBuffer
 {
-    int num;
-    std::deque<Eigen::VectorXd> x_buf;
-    std::deque<Eigen::VectorXd> y_buf;
+  int num;
+  std::deque<Eigen::VectorXd> x_buf;
+  std::deque<Eigen::VectorXd> y_buf;
 
-  public:
-    PointsBuffer() { num = 4; };
-    void setBufferSize(const int s) { num = s; }
-    void updateBuffer(const Eigen::VectorXd &x, const Eigen::VectorXd &y);
-    void getPoints(Eigen::VectorXd &x, Eigen::VectorXd &y);
+public:
+  PointsBuffer() { num = 4; };
+  void setBufferSize(const int s) { num = s; }
+  void updateBuffer(const Eigen::VectorXd &x, const Eigen::VectorXd &y);
+  void getPoints(Eigen::VectorXd &x, Eigen::VectorXd &y);
 };
 
 // Evaluate a polynomial.

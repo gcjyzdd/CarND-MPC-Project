@@ -8,6 +8,9 @@ Time_Difference::Time_Difference()
     t_total = 0;
     weights = 0.;
     default_td = 1 / 20.;
+
+    printInfo = true;
+    num = 5;
 }
 
 void Time_Difference::start()
@@ -19,12 +22,31 @@ float Time_Difference::averageTimeDiff(std::chrono::steady_clock::time_point cur
 {
     if (index > 0)
     {
-        t_total = t_total * decay + std::chrono::duration_cast<std::chrono::seconds>(current - t_stamp).count();
-        t_stamp = current;
-        weights = 1 + weights * decay;
-        index++;
+        float dif = std::chrono::duration_cast<std::chrono::microseconds>(current - t_stamp).count() / 1000. / 1000.;
+        if (tbuf.size() < num)
+        {
+            tbuf.push_back(dif);
+        }
+        else
+        {
+            tbuf.pop_front();
+            tbuf.push_back(dif);
+        }
 
-        return t_total / weights;
+        t_total += dif;
+        if (printInfo)
+        {
+            std::cout << "t_total = " << t_total  << std::endl;
+        }
+
+        float sum = 0.;
+        for (size_t i = 0; i < tbuf.size(); i++)
+        {
+            sum += tbuf[i];
+        }
+        t_stamp = current;
+        index++;
+        return sum / tbuf.size();
     }
     else
     {
@@ -34,6 +56,28 @@ float Time_Difference::averageTimeDiff(std::chrono::steady_clock::time_point cur
     }
 }
 
+float Time_Difference::weightedAverageTimeDiff(std::chrono::steady_clock::time_point current)
+{
+    if (index > 0)
+    {
+        t_total = t_total * decay + std::chrono::duration_cast<std::chrono::microseconds>(current - t_stamp).count() / 1000. / 1000.;
+        t_stamp = current;
+        weights = 1. + weights * decay;
+        index++;
+
+        if (printInfo)
+        {
+            std::cout << "t_total = " << t_total << " weights = " << weights << std::endl;
+        }
+        return t_total / weights;
+    }
+    else
+    {
+        t_stamp = current;
+        index++;
+        return default_td;
+    }
+}
 /**
  * Update the buffer.
  * 
@@ -62,16 +106,24 @@ void PointsBuffer::updateBuffer(const Eigen::VectorXd &x, const Eigen::VectorXd 
 */
 void PointsBuffer::getPoints(Eigen::VectorXd &x, Eigen::VectorXd &y)
 {
-    size_t len=0;
-    for(size_t i=0;i<x_buf.size();i++)
+    size_t len = 0, total = 0;
+    for (size_t i = 0; i < x_buf.size(); i++)
     {
-        x.resize(len + x_buf[i].size());
-        y.resize(len + y_buf[i].size());
+        total += x_buf[i].size();
+    }
 
-        for(size_t j=0;j<x_buf[i].size();j++)
+    x.resize(total);
+    y.resize(total);
+
+    for (size_t i = 0; i < x_buf.size(); i++)
+    {
+        //x.resize(len + x_buf[i].size());
+        //y.resize(len + y_buf[i].size());
+
+        for (size_t j = 0; j < x_buf[i].size(); j++)
         {
-            x[len+j] = x_buf[i][j];
-            y[len+j] = y_buf[i][j];
+            x[len + j] = x_buf[i][j];
+            y[len + j] = y_buf[i][j];
         }
         len += x_buf[i].size();
     }
