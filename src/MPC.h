@@ -6,6 +6,27 @@
 
 using namespace std;
 
+struct MPCWeights
+{
+  float w_cte;
+  float w_steer;
+  float w_a;
+  float w_v;  
+  float w_epsi;
+  float w_steer_dif;
+  float w_a_dif;
+  MPCWeights()
+  {
+    w_a = 1;
+    w_a_dif = 1;
+    w_cte = 1;
+    w_epsi = 1;    
+    w_steer = 1;
+    w_steer_dif = 1;
+    w_v = 1;
+  }
+};
+
 class MPC
 {
 public:

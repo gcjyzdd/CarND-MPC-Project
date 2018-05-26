@@ -15,7 +15,10 @@ public:
   float ref_v_;
   size_t N_;
   float dt_;
+  MPCWeights w;
   float weight_cte;
+  float w_steer_dif;
+
   // The solver takes all the state variables and actuator
   // variables in a singular vector. Thus, we should to establish
   // when one variable starts and another ends to make our lifes easier.
@@ -29,7 +32,10 @@ public:
   size_t a_start;
 
   // Coefficients of the fitted polynomial.
-  FG_eval(Eigen::VectorXd coeffs, float Lf, size_t N, float dt, float ref_v, float weight_cte_) : Lf_(Lf), N_(N), ref_v_(ref_v), dt_(dt), weight_cte(weight_cte_)
+  FG_eval(Eigen::VectorXd coeffs,
+          float Lf, size_t N,
+          float dt, float ref_v,
+          MPCWeights w_) : Lf_(Lf), N_(N), ref_v_(ref_v), dt_(dt), w(w_)
   {
     this->coeffs = coeffs;
 
@@ -55,24 +61,24 @@ public:
     // The part of the cost based on the reference state.
     for (int t = 0; t < N_; t++)
     {
-      fg[0] += CppAD::pow(vars[cte_start + t], 2) * weight_cte;
-      fg[0] += CppAD::pow(vars[epsi_start + t], 2);
-      fg[0] += CppAD::pow(vars[v_start + t] - ref_v_, 2);
+      fg[0] += CppAD::pow(vars[cte_start + t], 2) * w.w_cte;
+      fg[0] += CppAD::pow(vars[epsi_start + t], 2) * w.w_epsi;
+      fg[0] += CppAD::pow(vars[v_start + t] - ref_v_, 2) * w.w_v;
     }
 
     // Minimize the use of actuators.
     for (int t = 0; t < N_ - 1; t++)
     {
-      fg[0] += 10. * CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += CppAD::pow(vars[delta_start + t], 2) * w.w_steer;
       /** remove throtle! **/
-      fg[0] += CppAD::pow(vars[a_start + t], 2);
+      fg[0] += CppAD::pow(vars[a_start + t], 2) * w.w_a;
     }
 
     // Minimize the value gap between sequential actuations.
     for (int t = 0; t < N_ - 2; t++)
     {
-      fg[0] += 200. * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2) * 10;
-      fg[0] += 50. * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+      fg[0] += CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2) * w.w_steer_dif;
+      fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2) * w.w_a_dif;
     }
 
     //

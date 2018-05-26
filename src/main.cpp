@@ -46,15 +46,26 @@ int main()
   MPC mpc;
 
   // set mpc configuration
-  mpc.Lf_ = 2.67 -0.5;
-  mpc.N_ = 25;
-  mpc.ref_v_ = 72 * 0.44704; // m/s
-  mpc.dt_ = 1 / 15.;
-  mpc.weight_cte = 5.;
+  mpc.Lf_ = 2.87;
+  mpc.setHorizon(8);
+  mpc.ref_v_ = 30 * 0.44704; // m/s
+  mpc.dt_ = 1 / 6.;
+  mpc.a_max = 1.0;
+
+  MPCWeights mw;
+  mw.w_cte = 100.;
+  mw.w_epsi = 200.;
+  mw.w_steer_dif = 80;
+  mw.w_steer = 5;
+  mw.w_a = 0;
+  mw.w_v = 1;
+
+  mpc.w = mw;
 
   Time_Difference td;
+  td.setNum(5);
   PointsBuffer ptsBuffer;
-  ptsBuffer.setBufferSize(2);
+  ptsBuffer.setBufferSize(5);
 
   h.onMessage([&mpc, &ptsBuffer, &td](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                                       uWS::OpCode opCode) {
