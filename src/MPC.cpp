@@ -121,8 +121,8 @@ public:
       AD<double> delta0 = vars[delta_start + t - 1];
       AD<double> a0 = vars[a_start + t - 1];
 
-      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0 * x0;
-      AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0);
+      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0 * x0 + coeffs[3] * x0 * x0 * x0;
+      AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * x0 * x0);
 
       // Here's `x` to get you started.
       // The idea here is to constraint this value to be 0.
@@ -150,8 +150,14 @@ public:
 // MPC class definition
 //
 
-MPC::MPC() : N_(25), dt_(0.05), Lf_(2.67), ref_v_(50), time_shift(0), weight_cte(1.0)
+MPC::MPC() : N_(25), dt_(0.05), Lf_(2.67), ref_v_(50), time_shift(0)
 {
+  a_max = 1;
+  a_min = -1;
+
+  steer_max = 25 / 180. * M_PI;
+  steer_min = -25 / 180. * M_PI;
+
   x_start = 0;
   y_start = x_start + N_;
   psi_start = y_start + N_;
@@ -160,6 +166,23 @@ MPC::MPC() : N_(25), dt_(0.05), Lf_(2.67), ref_v_(50), time_shift(0), weight_cte
   epsi_start = cte_start + N_;
   delta_start = epsi_start + N_;
   a_start = delta_start + N_ - 1;
+
+  var_init.resize(N_ * 6 + (N_ - 1) * 2, 0.);
+}
+
+void MPC::setHorizon(int h)
+{
+  N_ = h;
+  x_start = 0;
+  y_start = x_start + N_;
+  psi_start = y_start + N_;
+  v_start = psi_start + N_;
+  cte_start = v_start + N_;
+  epsi_start = cte_start + N_;
+  delta_start = epsi_start + N_;
+  a_start = delta_start + N_ - 1;
+
+  var_init.resize(N_ * 6 + (N_ - 1) * 2, 0.);
 }
 
 MPC::~MPC() {}
@@ -222,8 +245,8 @@ vector<float> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs)
   // NOTE: Feel free to change this to something else.
   for (int i = a_start; i < n_vars; i++)
   {
-    vars_lowerbound[i] = -1.;  //-1.0;
-    vars_upperbound[i] = 1.75; //1.0;
+    vars_lowerbound[i] = -1.; //-1.0;
+    vars_upperbound[i] = 1.;  //1.0;
   }
 
   // Lower and upper limits for constraints

@@ -48,8 +48,14 @@ public:
   float dt_;
 
   size_t time_shift;
-  float weight_cte;
+  MPCWeights w;
 
+  float a_max;
+  float a_min;
+  float steer_max;
+  float steer_min;
+  
+  std::vector<float> var_init;
   // It was obtained by measuring the radius formed by running the vehicle in the
   // simulator around in a circle with a constant steering angle and velocity on a
   // flat terrain.

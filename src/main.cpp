@@ -121,9 +121,9 @@ int main()
           ptsBuffer.getPoints(vc_x, vc_y);
 
           Eigen::VectorXd state(6);
-          Eigen::VectorXd coeffs = polyfit(vc_x, vc_y, 2);
+          Eigen::VectorXd coeffs = polyfit(vc_x, vc_y, 3);
           //std::cout << "coeffs" << coeffs << std::endl;
-          double Latency = 0.; //0.1;//0.1;     // 100 ms
+          double Latency = 0.1; //0.1;//0.1;     // 100 ms
           double Lf = 2.67;
 
           double x = 0. + Latency * v; // + 0.5 * Latency * acc * acc;
@@ -132,13 +132,13 @@ int main()
           double vpsi = 0. + Latency * v * delta / Lf;
           y = Latency * v * vpsi * 0.5;
           double cte = polyeval(coeffs, x);
-          double epsi = vpsi - atan(coeffs[1] + 2 * coeffs[2] * x) + Latency * v * delta / Lf;
+          double epsi = vpsi - atan(coeffs[1] + 2 * coeffs[2] * x + 3 * coeffs[3] * x * x) + Latency * v * delta / Lf;
 
           state << x, y, vpsi, v, cte, epsi;
           //mpc.dt_ = time_dif - Latency;
           float dt = td.averageTimeDiff(std::chrono::steady_clock::now()) - Latency;
           std::cout << "dt = " << dt << " fr = " << 1 / dt << " v = " << v << std::endl;
-          mpc.dt_ = dt; //(time_dif_total / index) / 1000. - Latency;
+          //mpc.dt_ = dt * 7; //(time_dif_total / index) / 1000. - Latency;
           auto result = mpc.Solve(state, coeffs);
           double steer_value = result[0];
           double throttle_value = result[1];
@@ -147,7 +147,7 @@ int main()
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
           msgJson["steering_angle"] = -steer_value / deg2rad(25.);
-          msgJson["throttle"] = throttle_value / 1.75;
+          msgJson["throttle"] = throttle_value / mpc.a_max;
 
           int N = mpc.N_;
           //Display the MPC predicted trajectory
@@ -181,7 +181,7 @@ int main()
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          //this_thread::sleep_for(chrono::milliseconds((int)(1000*Latency)));
+          this_thread::sleep_for(chrono::milliseconds((int)(1000*Latency)));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       }

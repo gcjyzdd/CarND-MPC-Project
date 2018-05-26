@@ -22,6 +22,7 @@ class Time_Difference
 public:
   Time_Difference();
   void start();
+  void setNum(int n){num = n;}
   void setDefaultTimeDifference(const float td) { default_td = td; }
   void setDecay(const float d) { decay = d; }
   size_t getStep() { return index; }
