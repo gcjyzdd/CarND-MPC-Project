@@ -37,6 +37,7 @@ public:
   // Solve the model given an initial state.
   // Return the next state and actuations as a
   // vector.
+  void setHorizon(int h);
   vector<float> Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs);
 
 public:

@@ -187,7 +187,7 @@ vector<float> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs)
   Dvector vars(n_vars);
   for (int i = 0; i < n_vars; i++)
   {
-    vars[i] = 0.0;
+    vars[i] = var_init[i];//0.0;
   }
   // Set the initial variable values
   vars[x_start] = x;
@@ -251,13 +251,15 @@ vector<float> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs)
   constraints_upperbound[epsi_start] = epsi;
 
   // Object that computes objective and constraints
-  FG_eval fg_eval(coeffs, Lf_, N_, dt_, ref_v_, weight_cte);
+  FG_eval fg_eval(coeffs, Lf_, N_, dt_, ref_v_, w);
 
   // options
   std::string options;
   options += "Integer print_level  0\n";
   options += "Sparse  true        forward\n";
   options += "Sparse  true        reverse\n";
+  // Change this as you see fit.
+  options += "Numeric max_cpu_time          0.01\n";
 
   // place to return solution
   CppAD::ipopt::solve_result<Dvector> solution;
@@ -273,6 +275,10 @@ vector<float> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs)
   bool ok = true;
   ok &= solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
+  for (size_t i = 0; i < var_init.size(); i++)
+  {
+    var_init[i] = solution.x[i];
+  }
   auto cost = solution.obj_value;
   //std::cout << "Cost " << cost << std::endl;
   /*
