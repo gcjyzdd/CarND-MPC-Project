@@ -46,19 +46,21 @@ int main()
   MPC mpc;
 
   // set mpc configuration
-  mpc.Lf_ = 2.87;
+  mpc.Lf_ = 1.67;
   mpc.setHorizon(8);
-  mpc.ref_v_ = 30 * 0.44704; // m/s
-  mpc.dt_ = 1 / 6.;
-  mpc.a_max = 1.0;
+  mpc.ref_v_ = 130 * 0.44704; // m/s
+  mpc.dt_ = 1 / 5.;
+  mpc.a_max = 2.0;
+  mpc.a_min = -3;
 
   MPCWeights mw;
-  mw.w_cte = 100.;
+  mw.w_cte = 150.;
   mw.w_epsi = 200.;
   mw.w_steer_dif = 80;
   mw.w_steer = 5;
   mw.w_a = 0;
-  mw.w_v = 1;
+  mw.w_a_dif = 0.;
+  mw.w_v = 1.2;
 
   mpc.w = mw;
 
@@ -123,10 +125,10 @@ int main()
           Eigen::VectorXd state(6);
           Eigen::VectorXd coeffs = polyfit(vc_x, vc_y, 3);
           //std::cout << "coeffs" << coeffs << std::endl;
-          double Latency = 0.1; //0.1;//0.1;     // 100 ms
+          double Latency = 0; //0.1;//0.1;     // 100 ms
           double Lf = 2.67;
 
-          double x = 0. + Latency * v; // + 0.5 * Latency * acc * acc;
+          double x = 0. + Latency * v + 0.5 * Latency * Latency * acc;
           double y = 0.;
           v += acc * Latency;
           double vpsi = 0. + Latency * v * delta / Lf;
@@ -181,7 +183,7 @@ int main()
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds((int)(1000*Latency)));
+          this_thread::sleep_for(chrono::milliseconds((int)(1000 * Latency)));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       }
