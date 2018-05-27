@@ -100,7 +100,8 @@ int main()
 
           double delta = j[1]["steering_angle"];
           double acc = j[1]["throttle"];
-
+          delta = -delta;
+          acc *= mpc.a_max;
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
