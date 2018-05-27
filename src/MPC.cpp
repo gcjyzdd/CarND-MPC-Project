@@ -282,7 +282,7 @@ vector<float> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs)
   options += "Sparse  true        forward\n";
   options += "Sparse  true        reverse\n";
   // Change this as you see fit.
-  options += "Numeric max_cpu_time          0.01\n";
+  options += "Numeric max_cpu_time          0.015\n";
 
   // place to return solution
   CppAD::ipopt::solve_result<Dvector> solution;
