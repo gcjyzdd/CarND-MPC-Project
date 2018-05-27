@@ -127,19 +127,21 @@ int main()
           Eigen::VectorXd state(6);
           Eigen::VectorXd coeffs = polyfit(vc_x, vc_y, 3);
           //std::cout << "coeffs" << coeffs << std::endl;
-          double Latency = 0; //0.1;//0.1;     // 100 ms
-          double Lf = 2.67;
+          double Latency = 0.1; //0.1;//0.1;     // 100 ms
+          double Lf = mpc.Lf_;
 
-          double x = 0. + Latency * v + 0.5 * Latency * Latency * acc;
-          double y = 0.;
-          v += acc * Latency;
-          double vpsi = 0. + Latency * v * delta / Lf;
-          y = Latency * v * vpsi * 0.5;
-          double cte = polyeval(coeffs, x);
-          double epsi = vpsi - atan(coeffs[1] + 2 * coeffs[2] * x + 3 * coeffs[3] * x * x) + Latency * v * delta / Lf;
+          double x0 = 0, y0 = 0, psi0 = 0, v0 = v, cte0 = polyeval(coeffs, x0) - y0;
+          double epsi0 = psi0 - atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * x0 * x0);
 
-          state << x, y, vpsi, v, cte, epsi;
-          //mpc.dt_ = time_dif - Latency;
+          double x1 = x0 + Latency * v0;// + 0.5 * Latency * Latency * acc;
+          double psi1 = psi0 + v0 * delta / Lf * Latency;
+          double y1 = y0;// + v * Latency * psi1 / 2.;
+          double v1 = v0 + acc * Latency;
+          double cte1 = cte0 + v0 * sin(epsi0) * Latency;
+          double epsi1 = epsi0 + v0 * delta * Latency / Lf;
+
+          state << x1, y1, psi1, v1, cte1, epsi1;
+
           float dt = td.averageTimeDiff(std::chrono::steady_clock::now()) - Latency;
           std::cout << "dt = " << dt << " fr = " << 1 / dt << " v = " << v << std::endl;
           //mpc.dt_ = dt * 7; //(time_dif_total / index) / 1000. - Latency;
