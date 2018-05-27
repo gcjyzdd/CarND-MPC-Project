@@ -245,8 +245,8 @@ vector<float> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs)
   // NOTE: Feel free to change this to something else.
   for (int i = a_start; i < n_vars; i++)
   {
-    vars_lowerbound[i] = -1.; //-1.0;
-    vars_upperbound[i] = 1.;  //1.0;
+    vars_lowerbound[i] = a_min; //-1.0;
+    vars_upperbound[i] = a_max; //1.0;
   }
 
   // Lower and upper limits for constraints
