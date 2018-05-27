@@ -50,6 +50,7 @@ int main()
   mpc.setHorizon(8);
   mpc.ref_v_ = 130 * 0.44704; // m/s
   mpc.dt_ = 1 / 5.;
+  mpc.dt_ = 1 / 3.;
   mpc.a_max = 2.0;
   mpc.a_min = -3;
 
