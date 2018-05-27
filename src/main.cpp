@@ -48,14 +48,13 @@ int main()
   // set mpc configuration
   mpc.Lf_ = 1.67;
   mpc.setHorizon(8);
-  mpc.ref_v_ = 130 * 0.44704; // m/s
-  mpc.dt_ = 1 / 5.;
+  mpc.ref_v_ = 100 * 0.44704; // m/s
   mpc.dt_ = 1 / 3.;
   mpc.a_max = 2.0;
-  mpc.a_min = -3;
+  mpc.a_min = -1.0;
 
   MPCWeights mw;
-  mw.w_cte = 150.;
+  mw.w_cte = 180.;
   mw.w_epsi = 200.;
   mw.w_steer_dif = 80;
   mw.w_steer = 5;
@@ -153,7 +152,7 @@ int main()
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
           msgJson["steering_angle"] = -steer_value / deg2rad(25.);
-          msgJson["throttle"] = throttle_value / mpc.a_max;
+          msgJson["throttle"] = throttle_value > 0 ? throttle_value / mpc.a_max : -throttle_value / mpc.a_min;
 
           int N = mpc.N_;
           //Display the MPC predicted trajectory
