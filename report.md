@@ -108,7 +108,60 @@ This part was implemented in `line 113-124` of [main.cpp](./src/main.cpp):
           }
 ```
 
+To smooth the desired trajectory, a way point buffer was implemented in `line 37-48` [helper.h](./src/helper.h):
+
+```cpp
+struct PointsBuffer
+{
+  int num;
+  std::deque<vector<double>> x_buf;
+  std::deque<vector<double>> y_buf;
+
+public:
+  PointsBuffer() { num = 4; };
+  void setBufferSize(const int s) { num = s; }
+  void updateBuffer(const vector<double> &x, const vector<double> &y);
+  void getPoints(vector<double> &x, vector<double> &y);
+};
+```
+
+The size of point buffer was set to 5 in `line 70` of `main.cpp`:
+
+```cpp
+  ptsBuffer.setBufferSize(5);
+```
+
 ## Model Predictive with Latency
 
+Processing latency is easy within MPC. Assuming the vehicle is moving constantly in the future time period of latency, solve the MPC by shifting the car's initial states by `Latency` in time domain. This was implemented in `line 135-148` of `main.cpp`:
+
+```cpp
+          double Latency = 0.1; //0.1;//0.1;     // 100 ms
+          double Lf = mpc.Lf_;
+
+          double x0 = 0, y0 = 0, psi0 = 0, v0 = v, cte0 = polyeval(coeffs, x0) - y0;
+          double epsi0 = psi0 - atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * x0 * x0);
+
+          double x1 = x0 + Latency * v0; // + 0.5 * Latency * Latency * acc;
+          double psi1 = psi0 + v0 * delta / Lf * Latency;
+          double y1 = y0; // + v * Latency * psi1 / 2.;
+          double v1 = v0 + acc * Latency;
+          double cte1 = cte0 + v0 * sin(epsi0) * Latency;
+          double epsi1 = epsi0 + v0 * delta * Latency / Lf;
+
+          state << x1, y1, psi1, v1, cte1, epsi1;
+```
+
+Due to the difference of vehicle coordinate system and unity coordinate system, we need to
+
+* transfer velocity unit from mph to m/s
+* convert throtle to acceleration in m/s2
+* revert the sign of steer angle
+
+Those were implemented in `line 99 and 101-104` of `main.cpp`.
+ 
 ## Demo Simulation
 
+Compile the program and run the program simutaneously with the simulator. The car can drive stably at max speed of 100mph.
+
+See the recorded [video](./images/2018-05-28_22-34-53.mp4)
