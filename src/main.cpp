@@ -48,7 +48,7 @@ int main()
   // set mpc configuration
   mpc.Lf_ = 1.67;
   mpc.setHorizon(8);
-  mpc.ref_v_ = 100 * 0.44704; // m/s
+  mpc.ref_v_ = 130 * 0.44704; // m/s
   mpc.dt_ = 1 / 3.;
   mpc.a_max = 2.0;
   mpc.a_min = -1.0;
@@ -108,21 +108,27 @@ int main()
           * Both are in between [-1, 1].
           *
           */
-          vector<double> vx, vy; // way points in vehicle coordinate system
+          ptsBuffer.updateBuffer(ptsx, ptsy);
+          ptsBuffer.getPoints(ptsx, ptsy);
+          vector<WayPoint> wpts(ptsx.size());
+          vector<double> vx(ptsx.size()), vy(ptsx.size()); // way points in vehicle coordinate system
           Eigen::VectorXd vc_x(ptsx.size());
           Eigen::VectorXd vc_y(ptsx.size());
           // P_v = R_c' * (P_w - P_c)
           for (size_t i = 0; i < ptsx.size(); i++)
           {
-            vx.push_back(cos(psi) * (ptsx[i] - px) + sin(psi) * (ptsy[i] - py));
-            vy.push_back(-sin(psi) * (ptsx[i] - px) + cos(psi) * (ptsy[i] - py));
-            vc_x[i] = vx[i];
-            vc_y[i] = vy[i];
+            wpts[i].x = cos(psi) * (ptsx[i] - px) + sin(psi) * (ptsy[i] - py);
+            wpts[i].y = -sin(psi) * (ptsx[i] - px) + cos(psi) * (ptsy[i] - py);
+            vc_x[i] = wpts[i].x;
+            vc_y[i] = wpts[i].y;
           }
-
-          ptsBuffer.updateBuffer(vc_x, vc_y);
-          ptsBuffer.getPoints(vc_x, vc_y);
-
+          // sort points by x
+          std::sort(wpts.begin(), wpts.end(), by_x());
+          for (size_t i = 0; i < ptsx.size(); i++)
+          {
+            vx[i] = wpts[i].x;
+            vy[i] = wpts[i].y;
+          }
           Eigen::VectorXd state(6);
           Eigen::VectorXd coeffs = polyfit(vc_x, vc_y, 3);
           //std::cout << "coeffs" << coeffs << std::endl;
@@ -132,9 +138,9 @@ int main()
           double x0 = 0, y0 = 0, psi0 = 0, v0 = v, cte0 = polyeval(coeffs, x0) - y0;
           double epsi0 = psi0 - atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * x0 * x0);
 
-          double x1 = x0 + Latency * v0;// + 0.5 * Latency * Latency * acc;
+          double x1 = x0 + Latency * v0; // + 0.5 * Latency * Latency * acc;
           double psi1 = psi0 + v0 * delta / Lf * Latency;
-          double y1 = y0;// + v * Latency * psi1 / 2.;
+          double y1 = y0; // + v * Latency * psi1 / 2.;
           double v1 = v0 + acc * Latency;
           double cte1 = cte0 + v0 * sin(epsi0) * Latency;
           double epsi1 = epsi0 + v0 * delta * Latency / Lf;

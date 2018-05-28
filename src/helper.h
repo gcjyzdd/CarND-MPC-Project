@@ -4,8 +4,11 @@
 #include <iostream>
 #include <chrono>
 #include <deque> // std::deque
+#include <vector>
 #include "Eigen/Core"
 #include "Eigen/QR"
+
+using std::vector;
 
 class Time_Difference
 {
@@ -34,14 +37,14 @@ public:
 struct PointsBuffer
 {
   int num;
-  std::deque<Eigen::VectorXd> x_buf;
-  std::deque<Eigen::VectorXd> y_buf;
+  std::deque<vector<double>> x_buf;
+  std::deque<vector<double>> y_buf;
 
 public:
   PointsBuffer() { num = 4; };
   void setBufferSize(const int s) { num = s; }
-  void updateBuffer(const Eigen::VectorXd &x, const Eigen::VectorXd &y);
-  void getPoints(Eigen::VectorXd &x, Eigen::VectorXd &y);
+  void updateBuffer(const vector<double> &x, const vector<double> &y);
+  void getPoints(vector<double> &x, vector<double> &y);
 };
 
 // Evaluate a polynomial.
@@ -52,5 +55,18 @@ double polyeval(Eigen::VectorXd coeffs, double x);
 // https://github.com/JuliaMath/Polynomials.jl/blob/master/src/Polynomials.jl#L676-L716
 Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
                         int order);
+
+struct WayPoint
+{
+  double x,y;
+};
+
+struct by_x
+{
+  bool operator()(WayPoint const &a, WayPoint const &b)
+  {
+    return a.x < b.x;
+  }
+};
 
 #endif
